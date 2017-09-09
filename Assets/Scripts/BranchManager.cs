@@ -4,29 +4,40 @@ using UnityEngine;
 
 public class BranchManager : MonoBehaviour {
 
-    List<Branch> chunks = new List<Branch>();
+    public static BranchManager main;
+
+    public List<Branch> chunks = new List<Branch>();
     public Branch prefabBranch;
     public int randomSeed = 0;
+
+    bool runUnloadTimer = false;
     float unloadTimer = 0;
 	
     void Start()
     {
+        main = this;
         Random.InitState(randomSeed);
     }
-	void Update () {
+	void Update ()
+    {
+        if (runUnloadTimer) UnloadTimer();
 
-        unloadTimer -= Time.deltaTime;
-        if(unloadTimer <= 0)
-        {
-            UnloadChunk();
-            unloadTimer = 2;
-        }
-
-		while(chunks.Count < 10)
+        while (chunks.Count < 4)
         {
             SpawnNextChunk();
         }
-	}
+    }
+
+    private void UnloadTimer()
+    {
+        unloadTimer -= Time.deltaTime;
+        if (unloadTimer <= 0)
+        {
+            UnloadChunk();
+            runUnloadTimer = false;
+        }
+    }
+
     void SpawnNextChunk()
     {
         Branch parent = (chunks.Count > 0) ? chunks[chunks.Count - 1] : null; // get previous chunk
@@ -42,5 +53,13 @@ public class BranchManager : MonoBehaviour {
             Destroy(chunks[0].gameObject);
             chunks.RemoveAt(0);
         }
+    }
+    public Branch fetchNext(Branch branch)
+    {
+        runUnloadTimer = true;
+        unloadTimer = 1;
+        int index = chunks.IndexOf(branch) + 1;
+        if (index >= chunks.Count) return null;
+        return chunks[index];
     }
 }

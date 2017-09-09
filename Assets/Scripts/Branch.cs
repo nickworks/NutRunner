@@ -21,15 +21,17 @@ public class Branch : MonoBehaviour {
 
     public float length = 1;
     public SubdivisionSettings[] subdivisionSettings;
-    
+
+    public BranchMesh mesh { get; private set; }
+
     public void Init(Branch parent = null)
     {
+        mesh = GetComponent<BranchMesh>();
         if (parent) transform.position = parent.GetEndPoint();
 
         GeneratePoints(parent);
         
-        BranchMesh parentMesh = (parent) ? parent.GetComponent<BranchMesh>() : null;
-        GetComponent<BranchMesh>().BuildMesh(parentMesh);
+        mesh.BuildMesh((parent) ? parent.mesh : null);
     }
 
     private void GeneratePoints(Branch parent)
@@ -62,7 +64,7 @@ public class Branch : MonoBehaviour {
     public Quaternion GetRotationAtPoint(int n)
     {
         if (n < 0) n = 0;
-        if (n >= finalPoints.Length) n = finalPoints.Length - 2;
+        if (n >= finalPoints.Length - 1) n = finalPoints.Length - 2;
         Vector3 delta = finalPoints[n + 1] - finalPoints[n];
 
         return Quaternion.FromToRotation(transform.right, delta);
@@ -126,6 +128,16 @@ public class Branch : MonoBehaviour {
             total += (curr - prev).magnitude;
         }
         return total;
+    }
+    public Vector3 GetLerpPosition(int n, float p)
+    {
+        if (n < 0) n = 0;
+        if (n >= finalPoints.Length) n = finalPoints.Length - 1;
+
+        Vector3 p1 = finalPoints[n];
+        Vector3 p2 = (n >= finalPoints.Length - 1) ? p1 : finalPoints[n + 1];
+
+        return Vector3.Lerp(p1, p2, p);
     }
     public Vector3 GetJitter(float amt)
     {

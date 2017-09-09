@@ -5,6 +5,8 @@ using System.Collections.Generic;
 [RequireComponent(typeof(Branch))]
 public class BranchMesh : MonoBehaviour {
 
+    public const int SIDES = 16;
+
     Branch line;
     public Vector3[] points
     {
@@ -21,7 +23,7 @@ public class BranchMesh : MonoBehaviour {
     /// The 2nd dimension refers to points within that ring.
     /// </summary>
     private Vector3[,] rings = new Vector3[0,0];
-	public int sides = 8;
+	
 	public float radiusMax = 0.5f;
     public float radiusMin = 0.1f;
     public Vector2 scaleUV = new Vector2(1, 1);
@@ -33,7 +35,7 @@ public class BranchMesh : MonoBehaviour {
         Mesh mesh = GetComponent<MeshFilter>().mesh = new Mesh(); // make an empty mesh
         if (points != null && points.Length == 0) return; // can't make a mesh without points...
 
-        if (parent) sides = parent.sides;
+        //if (parent) SIDES = parent.SIDES;
 
         GenerateRadii(parent);
         GenerateRings(parent);
@@ -65,7 +67,7 @@ public class BranchMesh : MonoBehaviour {
     /// </summary>
     private void GenerateRings(BranchMesh parent)
     {
-        rings = new Vector3[points.Length, sides + 1]; // sides + 1 (UV seams!)
+        rings = new Vector3[points.Length, SIDES + 1]; // sides + 1 (UV seams!)
         
 
         for (int i = 0; i < points.Length; i++)
@@ -108,9 +110,9 @@ public class BranchMesh : MonoBehaviour {
     /// </summary>
     private void GenerateFirstRing()
     {
-        float arc = 2 * Mathf.PI / sides;
+        float arc = 2 * Mathf.PI / SIDES;
         float angle = 0;
-        for (int j = 0; j < sides; j++)
+        for (int j = 0; j < SIDES; j++)
         {
             // get the next point in the ring:
             Vector3 v = radii[0] * new Vector3(0, Mathf.Sin(angle), Mathf.Cos(angle));
@@ -119,7 +121,7 @@ public class BranchMesh : MonoBehaviour {
             // spin the angle:
             angle -= arc;
         }
-        rings[0, sides] = rings[0, 0]; // copy the first point (for UV seams!)
+        rings[0, SIDES] = rings[0, 0]; // copy the first point (for UV seams!)
     }
     private void SetRing(int n, Vector3[] v, Vector3 offset)
     {
@@ -168,20 +170,20 @@ public class BranchMesh : MonoBehaviour {
     /// <returns>An array of index numbers which correspond to values in the verts array.</returns>
     private int[] GenerateTris(Vector3[] verts)
     {
-        int[] tris = new int[sides * (points.Length - 1) * 6];
+        int[] tris = new int[SIDES * (points.Length - 1) * 6];
 
         int triNum = 0;
         for (int i = 0; i < points.Length - 1; i++)
         {
-            for (int j = 0; j < sides; j++)
+            for (int j = 0; j < SIDES; j++)
             {
 
-                int n = i * (sides + 1) + j; // sides + 1 (UV seams!)
+                int n = i * (SIDES + 1) + j; // sides + 1 (UV seams!)
 
                 int cornerBottomRight = n;
                 int cornerBottomLeft = n + 1;
-                int cornerTopLeft = n + sides + 2;
-                int cornerTopRight = n + sides + 1;
+                int cornerTopLeft = n + SIDES + 2;
+                int cornerTopRight = n + SIDES + 1;
 
                 tris[triNum++] = cornerBottomRight;
                 tris[triNum++] = cornerBottomLeft;
@@ -205,12 +207,12 @@ public class BranchMesh : MonoBehaviour {
         Vector2[] uvs = new Vector2[verts.Length];
         for (int i = 0; i <= points.Length - 1; i++)
         {
-            for (int j = 0; j <= sides; j++)
+            for (int j = 0; j <= SIDES; j++)
             {
-                float u = scaleUV.x * j / sides;
+                float u = scaleUV.x * j / SIDES;
                 float v = scaleUV.y * i / (points.Length - 1); // FIXME
 
-                uvs[i * (sides + 1) + j] = new Vector2(-u, v);
+                uvs[i * (SIDES + 1) + j] = new Vector2(-u, v);
             }
         }
         return uvs;
@@ -225,7 +227,7 @@ public class BranchMesh : MonoBehaviour {
         Vector3[] normals = new Vector3[verts.Length];
         for (int i = 0; i < verts.Length; i++)
         {
-            int ringNum = i / (sides + 1); // sides + 1 (UV seams!)
+            int ringNum = i / (SIDES + 1); // sides + 1 (UV seams!)
             normals[i] = (verts[i] - points[ringNum]).normalized; // FIXME: calculation is incorrect
         }
         return normals;
@@ -235,7 +237,7 @@ public class BranchMesh : MonoBehaviour {
         Color[] colors = new Color[verts.Length];
         for(int i = 0; i < colors.Length; i++)
         {
-            float radius = radii[i / (sides + 1)];
+            float radius = radii[i / (SIDES + 1)];
             float percent = 1 - (radius - radiusMin) / (radiusMax - radiusMin);
             colors[i] = Color.Lerp(Color.black, Color.white, percent);
         }
@@ -262,5 +264,38 @@ public class BranchMesh : MonoBehaviour {
     {
         percent = Mathf.Clamp(percent, 0, 1);
         return Mathf.Lerp(radiusMin, radiusMax, radiusCurve.Evaluate(percent));
+    }
+
+    public struct BranchSurfaceProperties
+    {
+        public Vector3 position;
+        public Vector3 up;
+        public Vector3 forward;
+    }
+
+    public BranchSurfaceProperties GetSurfaceProperties(int segment, int lane, float percent)
+    {
+        int maxSegment = rings.GetLength(0) - 1;
+        int maxLane = rings.GetLength(1) - 1;
+
+        if (segment < 0) segment = 0;
+        if (segment >= maxSegment) segment = maxSegment;
+        if (lane < 0) lane = 0;
+        if (lane >= maxLane) lane = maxLane;
+
+        int lookup2 = segment + 1;
+        if (lookup2 >= maxSegment) lookup2 = maxSegment;
+
+        Vector3 p1 = rings[segment, lane]; // the point behind the player
+        Vector3 p2 = rings[lookup2, lane]; // the point in front of the player
+
+        BranchSurfaceProperties results = new BranchSurfaceProperties();
+        results.position = Vector3.Lerp(p1, p2, percent);
+        results.forward = (p2 - p1).normalized;
+        results.up = (results.position - line.GetLerpPosition(segment, percent)).normalized;
+
+        results.position += transform.position;
+
+        return results;
     }
 }
