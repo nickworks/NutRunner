@@ -51,16 +51,13 @@ public class BranchMesh : MonoBehaviour {
     private void GenerateRadii(BranchMesh parent)
     {
         // if there's a parent mesh, use it's ending radius:
-        if (parent) radiusMax = parent.radiusMin; 
+        if (parent) radiusMax = parent.GetRadiusAt(1); 
 
         radii = new float[points.Length];
         for (int i = 0; i < points.Length; i++)
         {
             float percent = i / (float)(points.Length - 1);
-            percent = radiusCurve.Evaluate(percent);
-            float taperedRadius = Mathf.Lerp(radiusMin, radiusMax, percent);
-
-            radii[i] = taperedRadius;
+            radii[i] = GetRadiusAt(percent);
         }
     }
     /// <summary>
@@ -239,5 +236,9 @@ public class BranchMesh : MonoBehaviour {
             result[i] = rings[num,i];
         }
         return result;
+    }
+    public float GetRadiusAt(float percent)
+    {
+        return Mathf.Lerp(radiusMin, radiusMax, radiusCurve.Evaluate(percent));
     }
 }

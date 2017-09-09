@@ -12,19 +12,17 @@ public class BranchManager : MonoBehaviour {
 	}
 	
 	void Update () {
-		while(chunks.Count < 2)
+		while(chunks.Count < 4)
         {
             SpawnNextChunk();
         }
 	}
     void SpawnNextChunk()
     {
-        Vector3 nextPos = Vector3.zero;
         Branch parent = (chunks.Count > 0) ? chunks[chunks.Count - 1] : null; // get previous chunk
 
         Branch newBranch = Instantiate(prefabBranch);
         chunks.Add(newBranch);
-
         newBranch.Init(parent);
     }
 }

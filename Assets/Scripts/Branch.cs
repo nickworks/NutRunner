@@ -36,7 +36,7 @@ public class Branch : MonoBehaviour {
     }
     public Vector3 GetEndPoint()
     {
-        return finalPoints[finalPoints.Length - 1];
+        return finalPoints[finalPoints.Length - 1] + transform.position;
     }
     private void UpdateSpline()
     {
