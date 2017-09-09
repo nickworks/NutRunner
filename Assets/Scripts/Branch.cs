@@ -32,6 +32,8 @@ public class Branch : MonoBehaviour {
         GeneratePoints(parent);
         
         mesh.BuildMesh((parent) ? parent.mesh : null);
+
+        GetComponent<DetailSpawner>().AddDetails();
     }
 
     private void GeneratePoints(Branch parent)

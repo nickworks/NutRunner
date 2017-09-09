@@ -4,7 +4,6 @@ using UnityEngine;
 
 public class PlayerController : MonoBehaviour {
 
-
     public float speedForwards = 4;
     public float speedSideways = 2;
 
