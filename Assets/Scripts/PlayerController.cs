@@ -5,36 +5,26 @@ using UnityEngine;
 public class PlayerController : MonoBehaviour {
 
 
-    public float speed = 4;
+    public float speedForwards = 4;
+    public float speedSideways = 2;
 
-    Branch activeChunk;
-    int segment = 0;
-    int lane = 0;
-    float percent = 0;
     bool inputReady = true;
+    Branch activeChunk;
 
-    void Start()
-    {
-        
-    }
+    #region Position Info
+    int segment = 0;
+    float segmentPercent = 0;
+    int lane = 0;
+    float lanePercent = 0;
+    #endregion
+
+
     void Update()
     {
 
         if (activeChunk)
         {
-            float axisH = Input.GetAxisRaw("Horizontal");
-            if (axisH == 0)
-            {
-                inputReady = true;
-            }
-            else
-            {
-                if(inputReady) lane -= (int)axisH;
-                inputReady = false;
-            }
-            if (lane < 0) lane = BranchMesh.SIDES - 1;
-            if (lane > BranchMesh.SIDES - 1) lane = 0;
-
+            MoveSideways();
             RunForward();
             SetPositionAndRotation();
         }
@@ -44,12 +34,32 @@ public class PlayerController : MonoBehaviour {
         }
     }
 
+    private void MoveSideways()
+    {
+        float axisH = Input.GetAxisRaw("Horizontal");
+
+        lanePercent -= axisH * speedSideways * Time.deltaTime;
+        if(lanePercent < 0)
+        {
+            lanePercent++;
+            lane--;
+        }
+        if(lanePercent > 1)
+        {
+            lanePercent--;
+            lane++;
+        }
+
+        if (lane < 0) lane = BranchMesh.SIDES - 1;
+        if (lane > BranchMesh.SIDES - 1) lane = 0;
+    }
+
     private void RunForward()
     {
-        percent += speed * Time.deltaTime;
-        if (percent >= 1)
+        segmentPercent += speedForwards * Time.deltaTime;
+        if (segmentPercent >= 1)
         {
-            percent--;
+            segmentPercent--;
             segment++;
             if (segment >= activeChunk.finalPoints.Length - 1)
             {
@@ -61,7 +71,8 @@ public class PlayerController : MonoBehaviour {
 
     private void SetPositionAndRotation()
     {
-        BranchMesh.BranchSurfaceProperties props = activeChunk.mesh.GetSurfaceProperties(segment, lane, percent);
+        BranchMesh.BranchSurfaceProperties props =
+            activeChunk.mesh.GetSurfaceProperties(segment, segmentPercent, lane, lanePercent);
 
         transform.position = props.position;
         transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(props.forward, props.up), .1f);

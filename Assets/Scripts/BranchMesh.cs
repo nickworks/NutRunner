@@ -273,26 +273,29 @@ public class BranchMesh : MonoBehaviour {
         public Vector3 forward;
     }
 
-    public BranchSurfaceProperties GetSurfaceProperties(int segment, int lane, float percent)
+    public BranchSurfaceProperties GetSurfaceProperties(int segment, float segmentPercent, int lane, float lanePercent)
     {
         int maxSegment = rings.GetLength(0) - 1;
         int maxLane = rings.GetLength(1) - 1;
 
         if (segment < 0) segment = 0;
         if (segment >= maxSegment) segment = maxSegment;
+
         if (lane < 0) lane = 0;
-        if (lane >= maxLane) lane = maxLane;
+        if (lane >= maxLane) lane = 0;
 
-        int lookup2 = segment + 1;
-        if (lookup2 >= maxSegment) lookup2 = maxSegment;
+        int segment2 = segment + 1;
+        if (segment2 >= maxSegment) segment2 = maxSegment;
 
-        Vector3 p1 = rings[segment, lane]; // the point behind the player
-        Vector3 p2 = rings[lookup2, lane]; // the point in front of the player
+        int lane2 = lane + 1;
+
+        Vector3 p1 = Vector3.Lerp(rings[segment,  lane], rings[segment,  lane2], lanePercent); // the point behind the player
+        Vector3 p2 = Vector3.Lerp(rings[segment2, lane], rings[segment2, lane2], lanePercent); // the point in front of the player
 
         BranchSurfaceProperties results = new BranchSurfaceProperties();
-        results.position = Vector3.Lerp(p1, p2, percent);
+        results.position = Vector3.Lerp(p1, p2, segmentPercent);
         results.forward = (p2 - p1).normalized;
-        results.up = (results.position - line.GetLerpPosition(segment, percent)).normalized;
+        results.up = (results.position - line.GetLerpPosition(segment, segmentPercent)).normalized;
 
         results.position += transform.position;
 
