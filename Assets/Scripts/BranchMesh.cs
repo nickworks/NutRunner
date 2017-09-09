@@ -79,6 +79,7 @@ public class BranchMesh : MonoBehaviour {
                 CopyAndRotateRing(i);
             }
         }
+        Jitter();
     }
     /// <summary>
     /// This method copies the last ring from the parent mesh and uses the data to create this mesh's first ring.
@@ -128,7 +129,16 @@ public class BranchMesh : MonoBehaviour {
             rings[n, i] = v[i] + offset;
         }
     }
-
+    private void Jitter()
+    {
+        for(int i = 1; i < rings.GetLength(0) - 1; i++)
+        {
+            for (int j = 1; j < rings.GetLength(1) - 1; j++)
+            {
+                rings[i,j] += line.GetJitter(0.1f);
+            }
+        }
+    }
     /// <summary>
     /// This method generates vertex lists for the final mesh.
     /// </summary>

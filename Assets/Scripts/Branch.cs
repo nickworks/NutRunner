@@ -127,7 +127,7 @@ public class Branch : MonoBehaviour {
         }
         return total;
     }
-    private Vector3 GetJitter(float amt)
+    public Vector3 GetJitter(float amt)
     {
         return 0.5f * new Vector3(
             Random.Range(-amt, amt),
