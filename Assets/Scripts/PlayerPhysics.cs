@@ -4,40 +4,101 @@ using UnityEngine;
 
 public class PlayerPhysics : MonoBehaviour {
 
-    float speedValue = 1;
-    float horizontalSpeedValue = 1;
+    public BranchManager branchManager;
+
+    float speedValue = .02f;
+    float horizontalSpeedValue = .001f;
 
     float angle = 0;
 
-    float currentBranchRatio = 0;
-    Vector3 currentBranchStart = new Vector3(21, -21, 0);
-    Vector3 currentBranchEnd = new Vector3(-21, 21, 0);
+    int currentChunkIndex = 0;
+    int prevChunkCount = 0;
+
+    Branch currentBranch;
+    int currentSplineIndex = 0;
+    float currentSplineRatio = 0;
+    Vector3 currentSplineStart = new Vector3(21, -21, 0);
+    Vector3 currentSplineEnd = new Vector3(-21, 21, 0);
+
+    float currentDistanceTraveled = 0;
+    float currentBranchDistance = 0;
 
 	// Use this for initialization
 	void Start () {
-		
+
 	}
 	
 	// Update is called once per frame
 	void Update () {
-        float horizontalInput = 0;
-        if (Input.GetKey(KeyCode.LeftArrow)) horizontalInput = 1;
-        else if (Input.GetKey(KeyCode.RightArrow)) horizontalInput = -1;
+        if (currentBranch != null)
+        {
+            float horizontalInput = 0;
+            if (Input.GetKey(KeyCode.LeftArrow)) horizontalInput = 1;
+            else if (Input.GetKey(KeyCode.RightArrow)) horizontalInput = -1;
 
-        Debug.Log(horizontalInput);
+            float deltaTime = Time.deltaTime;
 
-        float radius = GetRadius();
+            float currentBranchLength = Vector3.Magnitude(currentSplineEnd - currentSplineStart);
+            float deltaRatio = speedValue * deltaTime / currentBranchLength;
+            currentSplineRatio += deltaRatio;
+            float prevBranchLength = currentBranchLength;
+            if (currentSplineRatio > 1)
+            {
+                if (currentSplineIndex == currentBranch.finalPoints.Length - 1)
+                {
+                    // If last spline, move to next Branch
+                    currentBranch = null;
+                }
+                else
+                {
+                    currentSplineIndex++;
+                    currentSplineStart = currentBranch.finalPoints[currentSplineIndex];
+                    currentSplineEnd = currentBranch.finalPoints[currentSplineIndex + 1];
+                }
+                float splineRatioOverlap = currentSplineRatio - 1;
+                float splineRatioBefore = deltaRatio - splineRatioOverlap;
+                float usedUpSpeed = splineRatioBefore * prevBranchLength / deltaTime;
+                float newSpeedValue = speedValue - usedUpSpeed;
 
-        float circumference = 2 * Mathf.PI * (radius * radius);
-        float angleRatio = horizontalSpeedValue * horizontalInput / circumference;
-        angle += angleRatio * 360;
+                currentBranchLength = Vector3.Magnitude(currentSplineEnd - currentSplineStart);
+                deltaRatio = newSpeedValue * deltaTime / currentBranchLength;
+                currentSplineRatio = deltaRatio;
+            }
 
-        float currentBranchLength = Vector3.Magnitude(currentBranchEnd - currentBranchStart);
-        float deltaRatio = speedValue * Time.deltaTime / currentBranchLength;
-        currentBranchRatio += deltaRatio;
-        
-        transform.position = PositionOnBranch(currentBranchRatio, currentBranchStart, currentBranchEnd, radius, angle);
+            currentDistanceTraveled += deltaTime * speedValue;
+
+            float radius = GetRadius(currentBranch, currentDistanceTraveled / currentBranchDistance);
+
+            float circumference = 2 * Mathf.PI * (radius * radius);
+            float angleRatio = horizontalSpeedValue * horizontalInput / circumference;
+            angle += angleRatio * 360;
+
+            transform.position = PositionOnBranch(currentSplineRatio, currentSplineStart, currentSplineEnd, radius, angle);
+        }
+        else
+        {
+            if (branchManager.chunks.Count > 0)
+            {
+                SetCurrentBranch(branchManager.chunks[0]);
+            }
+        }
 	}
+
+    public void SetCurrentBranch(Branch branch)
+    {
+        currentBranch = branch;
+        currentSplineIndex = 0;
+        currentSplineRatio = 0;
+        currentSplineStart = currentBranch.finalPoints[currentSplineIndex];
+        currentSplineEnd = currentBranch.finalPoints[currentSplineIndex + 1];
+        currentDistanceTraveled = 0;
+        currentBranchDistance = 0;
+        for (int i = 0; i < currentBranch.finalPoints.Length - 1; i++)
+        {
+            float distance = Vector3.Magnitude(currentBranch.finalPoints[i + 1] - currentBranch.finalPoints[i]);
+            currentBranchDistance += distance;
+        }
+    }
 
     public Vector3 PositionOnBranch(float distanceRatio, Vector3 start, Vector3 end, float radius, float angle)
     {
@@ -50,8 +111,8 @@ public class PlayerPhysics : MonoBehaviour {
         return pos;
     }
 
-    public float GetRadius()
+    public float GetRadius(Branch branch, float percent)
     {
-        return 3f;
+        return branch.GetComponent<BranchMesh>().GetRadiusAt(percent);
     }
 }
