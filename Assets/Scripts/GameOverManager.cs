@@ -17,6 +17,6 @@ public class GameOverManager : MonoBehaviour {
 
     public void OnPlayAgainButton()
     {
-        SceneManager.LoadScene(0); //TODO: Change to name of final gameplay scene
+        SceneManager.LoadScene("Proto2");
     }
 }
