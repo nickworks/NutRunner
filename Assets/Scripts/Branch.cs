@@ -3,38 +3,54 @@ using System.Collections.Generic;
 
 public class Branch : MonoBehaviour {
 
+    [System.Serializable]
+    public struct SubdivisionSettings
+    {
+        [Range(0.1f, 1f)] public float threshold;
+        [Range(0.0f, 1f)] public float jitterAmount;
+    }
+
     /// <summary>
     /// This is an array of vertices that makes up a line.
     /// </summary>
-	public Vector3[] points = new Vector3[] {};
+	public Vector3[] points { get; private set; }
     /// <summary>
     /// This is the array of vertices to use after subdiving the line.
     /// </summary>
     public Vector3[] finalPoints { get; private set; }
-    public int seed = 0;
-    public bool doSubdivision = true;
-    public float growAmount = 0.1f;
-    [Range(0.1f, 1f)] public float subdivideThreshold = .25f;
-    [Range(0.0f, 1f)] public float jitterAmount = .1f;
 
+    public float length = 1;
+    public SubdivisionSettings[] subdivisionSettings;
+    
     public void Init(Branch parent = null)
     {
-        Quaternion angleToGrow = (parent) ? parent.GetRotationAtPoint(100) : Quaternion.identity;
-
         if (parent) transform.position = parent.GetEndPoint();
 
+        GeneratePoints(parent);
         
-        Vector3 p1 = new Vector3(0, 0, 0);
-        Vector3 p2 = angleToGrow * Vector3.right;
-        //Vector3 p3 = new Vector3(0, 1.5f, .5f);
-
-        points = new Vector3[] { p1, p2 };
-
-        UpdateSpline();
-
         BranchMesh parentMesh = (parent) ? parent.GetComponent<BranchMesh>() : null;
         GetComponent<BranchMesh>().BuildMesh(parentMesh);
     }
+
+    private void GeneratePoints(Branch parent)
+    {
+
+        Quaternion oldAngle = (parent) ? parent.GetRotationAtPoint(100) : Quaternion.identity;
+        Quaternion newAngle = Random.rotationUniform;
+
+        List<Vector3> temp = new List<Vector3>();
+        temp.Add(new Vector3(0, 0, 0));
+        int max = 10;
+        for (int i = 0; i <= max; i++) {
+            Quaternion angleToGrow = Quaternion.Slerp(oldAngle, newAngle, i/(float)max);
+            Vector3 p = angleToGrow * Vector3.right * length + temp[temp.Count - 1];
+            temp.Add(p);
+        }
+
+        points = temp.ToArray();
+        Subdivide();
+    }
+
     /// <summary>
     /// Returns the world-coordinates of the last point.
     /// </summary>
@@ -47,48 +63,50 @@ public class Branch : MonoBehaviour {
     {
         if (n < 0) n = 0;
         if (n >= finalPoints.Length) n = finalPoints.Length - 2;
-        Vector3 ptFrom = finalPoints[n];
-        Vector3 ptTo = finalPoints[n + 1];
-        return Quaternion.FromToRotation(Vector3.right, ptTo - ptFrom);
+        Vector3 delta = finalPoints[n + 1] - finalPoints[n];
+
+        return Quaternion.FromToRotation(transform.right, delta);
     }
-    private void UpdateSpline()
+    public Vector3 GetDirectionToNextPoint(int n)
     {
-        Random.InitState(seed);
-        if (doSubdivision)
-        {
-            Subdivide();
-        }
-        else
-        {
-            finalPoints = (Vector3[])points.Clone();
-        }
+        if (n < 0) n = 0;
+        if (n >= finalPoints.Length) n = finalPoints.Length - 2;
+        Vector3 delta = finalPoints[n + 1] - finalPoints[n];
+
+        return delta;
     }
     private void Subdivide()
     {
         List<Vector3> temp = new List<Vector3>(points);
 
-        for(int i = 1; i < temp.Count; i++)
+        for (int pass = 0; pass < subdivisionSettings.Length; pass++)
         {
-            Vector3 curr = temp[i];
-            Vector3 prev = temp[i - 1];
-
-            float dis = (curr - prev).magnitude;
-
-            if(dis > subdivideThreshold)
+            for (int i = 1; i < temp.Count; i++)
             {
-                Vector3 avg = 0.5f * (curr + prev) + GetJitter();
-                temp.Insert(i, avg);
-                i--;
+                Vector3 curr = temp[i];
+                Vector3 prev = temp[i - 1];
+
+                float dis = (curr - prev).magnitude;
+                float threshold = subdivisionSettings[pass].threshold;
+                if (dis > threshold && threshold >= 0.1f)
+                {
+                    Vector3 avg = 0.5f * (curr + prev) + GetJitter(subdivisionSettings[pass].jitterAmount);
+                    temp.Insert(i, avg);
+                    i--;
+                }
             }
         }
 
         finalPoints = temp.ToArray();
     }
+    /// <summary>
+    /// This method is deprecated.
+    /// </summary>
     private void BakeSubdivision()
     {
-        if (!doSubdivision) return;
+        //if (!doSubdivision) return;
         points = (Vector3[]) finalPoints.Clone();
-        doSubdivision = false;
+        //doSubdivision = false;
     }
     private float GetMag()
     {
@@ -101,12 +119,12 @@ public class Branch : MonoBehaviour {
         }
         return total;
     }
-    private Vector3 GetJitter()
+    private Vector3 GetJitter(float amt)
     {
         return 0.5f * new Vector3(
-            Random.Range(-jitterAmount, jitterAmount),
-            Random.Range(-jitterAmount, jitterAmount),
-            Random.Range(-jitterAmount, jitterAmount)
+            Random.Range(-amt, amt),
+            Random.Range(-amt, amt),
+            Random.Range(-amt, amt)
             );
     }
 }

@@ -6,9 +6,13 @@ public class BranchManager : MonoBehaviour {
 
     List<Branch> chunks = new List<Branch>();
     public Branch prefabBranch;
-
+    public int randomSeed = 0;
     float unloadTimer = 0;
 	
+    void Start()
+    {
+        Random.InitState(randomSeed);
+    }
 	void Update () {
 
         unloadTimer -= Time.deltaTime;

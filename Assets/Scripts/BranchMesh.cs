@@ -68,6 +68,8 @@ public class BranchMesh : MonoBehaviour {
         rings = new Vector3[points.Length, sides + 1]; // sides + 1 (UV seams!)
         float arc = 2 * Mathf.PI / sides;
         Quaternion prevQuat = Quaternion.identity; // keep track of the angle of the previous ring...
+
+
         for (int i = 0; i < points.Length; i++)
         { // loop through all of the points in the spline...
 
@@ -80,6 +82,7 @@ public class BranchMesh : MonoBehaviour {
                 // if the current point is NOT the end point...
                 // get the quaternion to the next point:
                 nextQuat = line.GetRotationAtPoint(i);
+                
                 // average the quaternion with the previous quaternion (if this point isn't the first point):
                 prevQuat = isFirst ? nextQuat : Quaternion.Slerp(prevQuat, nextQuat, 0.5f);
             }
