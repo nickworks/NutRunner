@@ -70,10 +70,18 @@ public class Branch : MonoBehaviour {
     public Vector3 GetDirectionToNextPoint(int n)
     {
         if (n < 0) n = 0;
-        if (n >= finalPoints.Length) n = finalPoints.Length - 2;
+        if (n >= finalPoints.Length - 1) n = finalPoints.Length - 2;
         Vector3 delta = finalPoints[n + 1] - finalPoints[n];
 
         return delta;
+    }
+    public Quaternion GetRotationOffset(int n)
+    {
+
+        Vector3 dir1 = GetDirectionToNextPoint(n - 1);
+        Vector3 dir2 = GetDirectionToNextPoint(n);
+
+        return Quaternion.FromToRotation(dir1, dir2);
     }
     private void Subdivide()
     {

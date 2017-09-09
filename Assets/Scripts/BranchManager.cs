@@ -22,7 +22,7 @@ public class BranchManager : MonoBehaviour {
             unloadTimer = 2;
         }
 
-		while(chunks.Count < 4)
+		while(chunks.Count < 10)
         {
             SpawnNextChunk();
         }

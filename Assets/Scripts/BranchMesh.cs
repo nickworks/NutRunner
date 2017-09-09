@@ -66,58 +66,69 @@ public class BranchMesh : MonoBehaviour {
     private void GenerateRings(BranchMesh parent)
     {
         rings = new Vector3[points.Length, sides + 1]; // sides + 1 (UV seams!)
-        float arc = 2 * Mathf.PI / sides;
-        Quaternion prevQuat = Quaternion.identity; // keep track of the angle of the previous ring...
-
+        
 
         for (int i = 0; i < points.Length; i++)
         { // loop through all of the points in the spline...
-
-            bool isFirst = (i == 0);
-            bool isLast = (i == points.Length - 1);
-
-            Quaternion nextQuat = prevQuat;
-            if (!isLast)
+            if(i == 0)
             {
-                // if the current point is NOT the end point...
-                // get the quaternion to the next point:
-                nextQuat = line.GetRotationAtPoint(i);
-                
-                // average the quaternion with the previous quaternion (if this point isn't the first point):
-                prevQuat = isFirst ? nextQuat : Quaternion.Slerp(prevQuat, nextQuat, 0.5f);
-            }
-            Quaternion rotation = prevQuat;
-            float angle = 0;
-            
-            for (int j = 0; j < sides; j++)
+                if (parent) CopyFirstRingFromParent(parent);
+                else GenerateFirstRing();
+            } else
             {
-                // get the next point in the ring:
-                Vector3 v = radii[i] * new Vector3(0, Mathf.Sin(angle), Mathf.Cos(angle));
-                // rotate the point, translate the point, store the point:
-                rings[i, j] = rotation * v + points[i];
-                // spin the angle:
-                angle -= arc;
+                CopyAndRotateRing(i);
             }
-            rings[i, sides] = rings[i, 0]; // copy the first point (for UV seams!)
-
-            prevQuat = nextQuat;
         }
-
-        /////////////////// OVERRIDE FIRST RING:
-        // Copy the last ring from the parent BranchMesh:
+    }
+    /// <summary>
+    /// This method copies the last ring from the parent mesh and uses the data to create this mesh's first ring.
+    /// </summary>
+    private void CopyFirstRingFromParent(BranchMesh parent)
+    {
         if (parent)
         {
-
             Vector3 meshOffset = parent.transform.position - transform.position;
-
             Vector3[] prevRing = parent.GetLastRing();
-            for (int i = 0; i < prevRing.Length; i++)
-            {
-                rings[0, i] = prevRing[i] + meshOffset;
-            }
+            SetRing(0, prevRing, meshOffset);
         }
-
     }
+    /// <summary>
+    /// This method creates ring #n by copying the previous ring and rotating it slightly.
+    /// </summary>
+    private void CopyAndRotateRing(int n)
+    {
+        Quaternion rot = line.GetRotationOffset(n);
+        Vector3[] temp = GetRing(n - 1, true);
+        for (int i = 0; i < temp.Length; i++) temp[i] = rot * temp[i];
+        SetRing(n, temp, points[n]);
+    }
+    /// <summary>
+    /// This method generates a ring of vertices and uses it to create the first ring in this mesh.
+    /// </summary>
+    private void GenerateFirstRing()
+    {
+        float arc = 2 * Mathf.PI / sides;
+        float angle = 0;
+        for (int j = 0; j < sides; j++)
+        {
+            // get the next point in the ring:
+            Vector3 v = radii[0] * new Vector3(0, Mathf.Sin(angle), Mathf.Cos(angle));
+            // rotate the point, translate the point, store the point:
+            rings[0, j] = v + points[0];
+            // spin the angle:
+            angle -= arc;
+        }
+        rings[0, sides] = rings[0, 0]; // copy the first point (for UV seams!)
+    }
+    private void SetRing(int n, Vector3[] v, Vector3 offset)
+    {
+        if (n < 0 || n >= rings.GetLength(0)) return;
+        for (int i = 0; i < v.Length; i++)
+        {
+            rings[n, i] = v[i] + offset;
+        }
+    }
+
     /// <summary>
     /// This method generates vertex lists for the final mesh.
     /// </summary>
@@ -224,7 +235,7 @@ public class BranchMesh : MonoBehaviour {
     {
         return GetRing(rings.GetLength(0) - 1);
     }
-    public Vector3[] GetRing(int num)
+    public Vector3[] GetRing(int num, bool shiftToOrigin = false)
     {
         if (num < 0 || num >= rings.GetLength(0)) return new Vector3[0];
    
@@ -232,7 +243,8 @@ public class BranchMesh : MonoBehaviour {
         Vector3[] result = new Vector3[count];
         for(int i = 0; i < count; i++)
         {
-            result[i] = rings[num,i];
+            result[i] = rings[num, i];
+            if(shiftToOrigin) result[i] -= points[num];
         }
         return result;
     }
