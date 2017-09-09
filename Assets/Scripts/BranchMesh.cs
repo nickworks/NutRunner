@@ -79,7 +79,7 @@ public class BranchMesh : MonoBehaviour {
             {
                 // if the current point is NOT the end point...
                 // get the quaternion to the next point:
-                nextQuat = GetQuaternionFromTo(points[i], points[i + 1]);
+                nextQuat = line.GetRotationAtPoint(i);
                 // average the quaternion with the previous quaternion (if this point isn't the first point):
                 prevQuat = isFirst ? nextQuat : Quaternion.Slerp(prevQuat, nextQuat, 0.5f);
             }
@@ -217,10 +217,6 @@ public class BranchMesh : MonoBehaviour {
         }
         return colors;
     }
-    private Quaternion GetQuaternionFromTo(Vector3 ptFrom, Vector3 ptTo)
-    {
-        return Quaternion.FromToRotation(Vector3.right, ptTo - ptFrom);
-    }
     public Vector3[] GetLastRing()
     {
         return GetRing(rings.GetLength(0) - 1);
@@ -239,6 +235,7 @@ public class BranchMesh : MonoBehaviour {
     }
     public float GetRadiusAt(float percent)
     {
+        percent = Mathf.Clamp(percent, 0, 1);
         return Mathf.Lerp(radiusMin, radiusMax, radiusCurve.Evaluate(percent));
     }
 }

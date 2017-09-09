@@ -19,24 +19,37 @@ public class Branch : MonoBehaviour {
 
     public void Init(Branch parent = null)
     {
+        Quaternion angleToGrow = (parent) ? parent.GetRotationAtPoint(100) : Quaternion.identity;
+
         if (parent) transform.position = parent.GetEndPoint();
 
+        
         Vector3 p1 = new Vector3(0, 0, 0);
-        Vector3 p2 = new Vector3(0, 1, 0);
-        Vector3 p3 = new Vector3(0, 1.5f, .5f);
+        Vector3 p2 = angleToGrow * Vector3.right;
+        //Vector3 p3 = new Vector3(0, 1.5f, .5f);
 
-        points = new Vector3[] { p1, p2, p3 };
+        points = new Vector3[] { p1, p2 };
 
         UpdateSpline();
 
-        BranchMesh parentMesh = null;
-        if (parent) parentMesh = parent.GetComponent<BranchMesh>();
-
+        BranchMesh parentMesh = (parent) ? parent.GetComponent<BranchMesh>() : null;
         GetComponent<BranchMesh>().BuildMesh(parentMesh);
     }
+    /// <summary>
+    /// Returns the world-coordinates of the last point.
+    /// </summary>
+    /// <returns></returns>
     public Vector3 GetEndPoint()
     {
         return finalPoints[finalPoints.Length - 1] + transform.position;
+    }
+    public Quaternion GetRotationAtPoint(int n)
+    {
+        if (n < 0) n = 0;
+        if (n >= finalPoints.Length) n = finalPoints.Length - 2;
+        Vector3 ptFrom = finalPoints[n];
+        Vector3 ptTo = finalPoints[n + 1];
+        return Quaternion.FromToRotation(Vector3.right, ptTo - ptFrom);
     }
     private void UpdateSpline()
     {

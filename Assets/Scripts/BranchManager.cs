@@ -7,11 +7,17 @@ public class BranchManager : MonoBehaviour {
     List<Branch> chunks = new List<Branch>();
     public Branch prefabBranch;
 
-    void Start () {
-		
-	}
+    float unloadTimer = 0;
 	
 	void Update () {
+
+        unloadTimer -= Time.deltaTime;
+        if(unloadTimer <= 0)
+        {
+            UnloadChunk();
+            unloadTimer = 2;
+        }
+
 		while(chunks.Count < 4)
         {
             SpawnNextChunk();
@@ -24,5 +30,13 @@ public class BranchManager : MonoBehaviour {
         Branch newBranch = Instantiate(prefabBranch);
         chunks.Add(newBranch);
         newBranch.Init(parent);
+    }
+    void UnloadChunk()
+    {
+        if (chunks.Count > 0)
+        {
+            Destroy(chunks[0].gameObject);
+            chunks.RemoveAt(0);
+        }
     }
 }
