@@ -6,7 +6,7 @@ public class PlayerPhysics : MonoBehaviour {
 
     public BranchManager branchManager;
 
-    float speedValue = .02f;
+    float speedValue = .4f;
     float horizontalSpeedValue = .001f;
 
     float angle = 0;
